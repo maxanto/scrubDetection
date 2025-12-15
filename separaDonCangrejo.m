@@ -1,5 +1,5 @@
-%Separo los tramos de señal que tienen cangrejos
-%Una mejora sería expresar meanTime en función del tiempo y no de la cantidad de muestras
+%Separo los tramos de seÃ±al que tienen cangrejos
+%Una mejora serÃ­a expresar meanTime en funciÃ³n del tiempo y no de la cantidad de muestras
 
 %% Reseteo matlab
 clear
@@ -7,15 +7,15 @@ close all
 clc
 
 %% Criterios
-passBand = [3 20]*1E3;
+passBand = [3 20]*1E3; %Banda de paso en donde se encuentran las vocalizaciones de los cangrejos
 antiPulseWeights = ones(20, 1); %Pesos de la ventana de promediado para que no salga la respuesta al impulso del filtro pasabanda uso 300K/15K = 20 muestras
 meanTime = 50E3; %50 mil muestras es el tiempo que duran las detecciones que vi a ojo
-maxTime = 3*meanTime; %Lo máximo que puede medir una detección para que se guarde son tres cangrejos superpuestos
-minTime = floor(meanTime/3); %Lo mínimo para guardar un archivo es una detección corta de 10K muestras
-margin = floor(meanTime/10); %El margen para la detección
-win = minTime; %Esta es la ventana del filtro promediador, lo tengo que usar porque aparecen muchos cruces por cero en la potencia instantánea. Hay una relación entre esta ventana y la frecuencia de paso del filtro pasabandas
+maxTime = 3*meanTime; %Lo mÃ¡ximo que puede medir una detecciÃ³n para que se guarde son tres cangrejos superpuestos
+minTime = floor(meanTime/3); %Lo mÃ­nimo para guardar un archivo es un tercio de una vocalizaciÃ³n. Esto es una forma de eliminar la detecciÃ³n de espurios.
+margin = floor(meanTime/10); %El margen para la detecciÃ³n. Se agreaga un dÃ©cimo del tiempo promedio antes y despuÃ©s de cada vocalizaciÃ³n. Hay veces que el cruce por el umbral 
+win = minTime; %Esta es la ventana del filtro promediador, lo tengo que usar porque aparecen muchos cruces por cero en la potencia instantÃ¡nea. Hay una relaciÃ³n entre esta ventana y la frecuencia de paso del filtro pasabandas
 weights = ones(win, 1); %Pesos de la ventana de promediado
-prodThr = 1.5; %El número que se le va a
+prodThr = 1.5; %El nÃºmero que se le va a
 
 %% Carpetas
 %Carpeta de datos
@@ -25,7 +25,7 @@ fileList = dir([folderIn '\*.wav']); %Carga la lista de archivos .wav
 %Arma carpeta para guardar datos
 folderOutDet = [folderIn 'detecciones\']; %Carpeta donde se guardan los audios con las detecciones
 mkdir(folderOutDet)
-folderOutRui = [folderIn 'ruido\']; %Carpeta donde se guardan los audios sin detección
+folderOutRui = [folderIn 'ruido\']; %Carpeta donde se guardan los audios sin detecciÃ³n
 mkdir(folderOutRui)
 folderOutCont = [folderIn 'control\']; %Carpeta donde se guardan los audios recortados y el umbral
 mkdir(folderOutCont)
@@ -43,7 +43,7 @@ for i = 1:length(fileList)
 
     data1 = filter(antiPulseWeights,1,data); %Hago el promedio de ventana deslizante para que no salga la respuesta al impulso del filtro que sigue
     data2 = bandpass(data1,passBand,fs); %Aplico filtro pasabanda
-    data3 = data2.^2; %Calculo potencia instantánea
+    data3 = data2.^2; %Calculo potencia instantÃ¡nea
     data4 = filter(weights,1,data3); %El resultado tiene muchos cruces por cero hago el promedio
 
     thr = prodThr*mean(data4); %Vector que contiene unos cada vez que se supera el umbral
@@ -64,26 +64,26 @@ for i = 1:length(fileList)
 
     %-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0
 
-    % Extraigo las porciones con detección
+    % Extraigo las porciones con detecciÃ³n
     count = 0; %Cuenta la cantidad de extracciones
-    flag = 1; %Bandera que indica que la posición anterior no tiene detección
+    flag = 1; %Bandera que indica que la posiciÃ³n anterior no tiene detecciÃ³n
     for j = 1:length(det)
-        if det(j) %detectó que supera el umbral, ya está recorriendo adentro de una detección
-            if flag %Si es el primer punto de la detección
+        if det(j) %detectÃ³ que supera el umbral, ya estÃ¡ recorriendo adentro de una detecciÃ³n
+            if flag %Si es el primer punto de la detecciÃ³n
                 ini = j;
                 flag = 0;
             end
-        else %Si está afuera de la detección
-            if ~flag % Si el punto anterior pertenece a una detección
+        else %Si estÃ¡ afuera de la detecciÃ³n
+            if ~flag % Si el punto anterior pertenece a una detecciÃ³n
                 fin = j-1;
-                if ini > margin %Este if previene el caso de comenzar con una detección
-                    index = (ini-margin):fin; %Desplazo el primer índice para preservar el flanco
+                if ini > margin %Este if previene el caso de comenzar con una detecciÃ³n
+                    index = (ini-margin):fin; %Desplazo el primer Ã­ndice para preservar el flanco
                 else
                     index = 1:fin;
                 end
                 flag = 1;
-                if length(index) > minTime %Guarda el archivo si la detección es más larga que el tiempo mínimo me proteje de detecciones cortas por algún sobrepico
-                    if length(index) < maxTime %Guarda el archivo si la detección es mas corta que el tiempo máximo, me proteje de detecciones largas por intervalos con ruido
+                if length(index) > minTime %Guarda el archivo si la detecciÃ³n es mÃ¡s larga que el tiempo mÃ­nimo me proteje de detecciones cortas por algÃºn sobrepico
+                    if length(index) < maxTime %Guarda el archivo si la detecciÃ³n es mas corta que el tiempo mÃ¡ximo, me proteje de detecciones largas por intervalos con ruido
                         count = count + 1;
                         fileOut = [folderOutDet fileIn(1:end-4) '_' num2str(count) fileIn(end-3:end)];
                         audiowrite(fileOut,data(index),fs);
@@ -95,7 +95,7 @@ for i = 1:length(fileList)
 
     % Extraigo porciones sin cangrejos
     count = 0; %Cuenta la cantidad de extracciones
-    flag = 1; %Bandera que indica que la posición anterior no tiene detección
+    flag = 1; %Bandera que indica que la posiciÃ³n anterior no tiene detecciÃ³n
     for j = 1:length(det)
         if ~det(j)
             if flag
@@ -116,5 +116,6 @@ for i = 1:length(fileList)
         end
     end
 end
+
 
 msgbox('Listo', ''); % Mostrar ventana emergente al finalizar
